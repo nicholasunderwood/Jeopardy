@@ -43,25 +43,18 @@ function addRing(newRing) {
 }
 
 function sendScores() {
-	const temp = [...players];
-	const ranked = [];
-	var rank = 1;
-	var max;
-	while(temp.length > 0) {
-		let index = 0;
-		max = temp[0];
-		for(let i = 1; i < temp.length; i++){
-			if(temp[i].score > max.score){
-				max = temp[i];
-				index = i;
-			}
-		}
-		temp.splice(index,1);
-		if(ranked.length > 0 && ranked[ranked.length - 1].score > max.score) rank++;
-		sockets.get(max.id).emit('score', max.score, rank);
-		ranked.push(max);
+	const ranked = [...players].sort((a,b) => b.score - a.score);
+	ranked.forEach(player => {
+		sockets.get(player.id).emit('score', player.score);
+	});
+
+	if(host != null) {
+		host.emit('scores', ranked);
 	}
-	if(host != null) host.emit('scores', ranked);
+}
+
+function addHostListeners(){
+
 }
 
 const sockets = new Map();
@@ -74,7 +67,7 @@ var question = null;
 var currentPlayer = null;
 var hasStarted = false;
 
-fs.readFile("question2.json", 'utf8', (err, data) => {
+fs.readFile("questions.json", 'utf8', (err, data) => {
 	if (err) throw err;
 	board = JSON.parse(data)
 	for(key in board){
@@ -88,24 +81,59 @@ io.on('connection', socket => {
 	var hasReadied = false;
 	var player = null;
 	sockets.set(socket.id, socket);
+	socket.emit('players', players, host != null);
 
-	socket.emit()
+	function addHostListeners(){
+
+		socket.on('square chosen', (catagory, index) => {
+			console.log(catagory, index)
+			question = board[catagory][index]
+			socket.emit('question', question);
+			io.sockets.emit('buzzState', true);
+		});
+
+		socket.on('score change', (id, delta) => {
+			let player = players.find(player => player.id == id)
+			player.score += +delta;
+			sendScores();
+		});
+
+		socket.on('correct', () => {
+			currentPlayer.score += question.value;
+			sendScores();
+		});
+
+		socket.on('incorrect', () => {
+			io.sockets.emit('buzzState', true);
+			currentPlayer.score -= question.value;
+			sendScores()
+		});
+
+		socket.on('back', () => {
+			socket.emit('board', Object.keys(board), players);
+		});
+	}
+
+	//TODO: add listener on start, not ready
+	function addPlayerListeners(){
+		socket.on('buzz', date => {
+			addRing({'player': player, 'time': date});
+			socket.emit('buzzState', false);
+		});
+	}
 
 	socket.on('ready', name => {
 		console.log(name, name == 'host');
-		if(hasReadied){
-			isHost = false;
-			players.splice(players.indexOf(player));
-			player = null;
-		}
+
+		// if(hasReadied){
+		// 	isHost = false;
+		// 	players.splice(players.indexOf(player));
+		// 	player = null;
+		// }
 
 		hasReadied = true;
 
-		if(hasStarted) {
-			socket.emit('start');
-			sendScores();
-			socket.emit('buzzState', false)
-		}
+
 
 		if(name != 'host'){
 			player = new Player(socket.id, name);
@@ -115,48 +143,25 @@ io.on('connection', socket => {
 				addRing({'player': player, 'time': date});
 				socket.emit('buzzState', false);
 			});
+
+			if(hasStarted) {
+				socket.emit('start');
+				socket.emit('buzzState', false)
+				sendScores()
+			}
 		} else {
 			isHost = true;
 			host = socket;
-
+	
 			socket.on('start', () => {
-				hasStarted = true;
-				io.sockets.emit('start', Object.keys(board));
-				sendScores();
-				io.sockets.emit('buzzState', false);
 				console.log('start');
-			});
 
-			socket.on('square chosen', (catagory, index) => {
-				console.log(catagory, index)
-				question = board[catagory][index]
-				io.sockets.emit('buzzState', true);
-				socket.emit('question', question);
-			});
-
-			socket.on('score change', (id, delta) => {
-				players.forEach(player => {
-					if(player.id == id){
-						player.score += +delta;
-						sendScores();
-						return;
-					}
-				});
-			});
-
-			socket.on('correct', () => {
-				currentPlayer.score += question.value;
+				hasStarted = true;
+				addHostListeners();
+	
+				io.sockets.emit('start', Object.keys(board));
+				io.sockets.emit('buzzState', false);
 				sendScores();
-			});
-
-			socket.on('incorrect', () => {
-				io.sockets.emit('buzzState', true);
-				currentPlayer.score -= question.value;
-				sendScores()
-			});
-
-			socket.on('back', () => {
-				socket.emit('board', Object.keys(board), players);
 			});
 		}
 

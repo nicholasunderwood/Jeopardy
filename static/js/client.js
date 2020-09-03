@@ -1,6 +1,8 @@
 const socket = io();
 var name = '';
 var isHost = false;
+var currentScores = null;
+var currentQuestion = null;
 
 // localstorage.setItem('uUID', Math.random().toString(24) + new Date());
 // socket.emit('userLogin', localstorage.getItem('uUID'));
@@ -12,12 +14,9 @@ function show(id){
 }
 
 function startGame(categories) {
-    socket.removeListener('start', startGame)
-    
-    if(!isHost){
-        loadBuzzer();
-        return;
-    }
+    console.log('start game')
+    socket.off('start')
+    socket.off('players')
 
     socket.on('question', showQuestion);
     socket.on('board', showBoard);
@@ -30,8 +29,7 @@ function startGame(categories) {
 }
 
 function loadRankings(scores){
-    
-    let list = $('#rankings ul');
+    let list = $('#rankings ul').empty();
     let add = $('<input type="button" value="+" class="money-control add btn btn-success">');
     let sub = $('<input type="button" value="-" class="money-control add btn btn-danger">');
 
@@ -46,9 +44,15 @@ function loadRankings(scores){
 
     socket.removeListener('scores', loadRankings);
     socket.on('scores', updateRankings);
+    currentScores = scores
 }
 
 function updateRankings(scores) {
+    if(scores.length != currentScores.length){
+        loadRankings(scores)
+        return;
+    }
+
     $('#rankings li div h5').each((i,el) => {
         let player = scores[Math.floor(i/2)];
         if(i % 2 == 0){
@@ -58,7 +62,6 @@ function updateRankings(scores) {
             $(el).text((player.score < 0 ? '-$' : '$') + Math.abs(player.score));
         }
     })
-
 }
 
 function loadBoard(categories) {
@@ -75,10 +78,10 @@ function loadBoard(categories) {
         $('#board tbody').append(tr);
     }
 
-    $('td[answered="false"]').click(event => {
+    $('#board td').click(event => {
         let td = $(event.target);
-        console.log(td, td.attr('cat'));
-        td.attr('answered', true);
+        td.addClass('answered');
+        td.unbind('click');
         socket.emit('square chosen', td.attr('cat'), td.attr('index'));
     });
 }
@@ -95,24 +98,33 @@ function changeScore(event, delta) {
     socket.emit('score change', $($(event.target).parent()).attr('player'), delta);
 }
 
+function setValidation(isDisabled){
+    $('.validation').each( (_, el) => $(el).prop('disabled', isDisabled));
+}
+
 function loadQuestion() {
 
-    $('#incorrect').click(() => { socket.emit('incorrect'); });
-
-    $('#correct').click(() => {
-        socket.emit('correct');
-        showAnswer();
+    $('#incorrect').click(() => {
+        socket.emit('incorrect');
+        setValidation(true);
     });
 
     socket.on('buzz', name => {
         alert(name + " has buzzed in");
-        $('.validation').each( (_, el) => $(el).prop('disabled', false));
+        setValidation(false);
     });
 }
 
 function showQuestion(question){
+    currentQuestion = question
 
-    $('.validation').each( (_, el) => $(el).prop('disabled', true));
+    setValidation(true)
+
+    $('#correct').click(() => {
+        socket.emit('correct');
+        showAnswer(question.answer);
+        setValidation(true);
+    });
     
     $('#back').unbind().click(() => {
         showAnswer(question.answer);
@@ -133,13 +145,14 @@ function showQuestion(question){
 }
 
 function showAnswer(answer) {
+    console.log('show answer', answer)
     $('#a').text(answer);
     $('.validation').each((_,el) => $(el).prop('disabled', true));
     $('#back').val('Back to Board');
     $('#back').unbind().click(() => socket.emit('back') );
 }
 
-function loadBuzzer() {
+function loadBuzzer(name) {
 
     function getEnding(score) {
         if(score > 3 && score < 21) return 'th';
@@ -149,31 +162,33 @@ function loadBuzzer() {
         return 'th'
     }
 
-    let button = $('#buzzer>input');
-    
+    function setScore(score){
+        $('#score-display').text((score < 0 ? '-$' : '$') + Math.abs(score));
+    }
+
     function setButton(enabled){
         button.prop('disabled',!enabled);
     }
-
+    
+    socket.off('start'); socket.off('players');
     socket.on('buzzState', setButton);
+    socket.on('score', setScore);
+    
+    let button = $('#buzzer>input');
 
-    socket.on('score', (score, rank) => {
-        $('#score').text((score < 0 ? '-$' : '$') + Math.abs(score));
-        $('#rank').text(rank.toString() + getEnding(rank));
-
-        // $('#rank').text('' + rank + digit == 1 ? "st" : digit == 2 ? 'nd' : digit == 3 ? 'rd' : 'th');
-    })
-
-    $('#buzzer>input').click(() => {
+    button.click(() => {
         socket.emit('buzz', new Date());
         setButton(false);
     });
-
+    
+    setScore(0)
+    $('#name-display').text(name)
     show('buzzer');
 }
 
 $( document ).ready( () => {
     show('login');
+
     $('.clientType').click(event => {
         let btn = $(event.target);
         if(btn.hasClass('btn-outline-dark')) {
@@ -191,8 +206,8 @@ $( document ).ready( () => {
         isHost = $('#isHost').hasClass('btn-dark');
         name = isHost ? 'host' : $('#name').val();
         if(!name) return;
+
         socket.emit('ready', name);
-        socket.on('start', startGame);
 
         $('#submit').prop('disabled', true);
         $('#name').change(() => $('#submit').prop('disabled', false))
@@ -202,6 +217,10 @@ $( document ).ready( () => {
                 socket.emit('start');
             }).prop('disabled', false);
             $('#start-div').slideDown();
+
+            socket.on('start', startGame);
+        } else {
+            socket.on('start', () => { loadBuzzer(name) });
         }
     });
 
@@ -209,7 +228,7 @@ $( document ).ready( () => {
         console.log("players", isHost, players)
         $('#lst-div').show();
         $('#isHost').prop('disabled', hasHost && !isHost);
-        $('#start').prop('disabled', players.length == 0);
+        $('#start').prop('disabled', players.length < 2);
         $('#players-list').empty();
         players.forEach((player) => {
             $('#players-list').append($(`<li class='list-group-item'>${player.name}</li>`));

@@ -80,12 +80,14 @@ body{
     vertical-align: center;
     cursor: pointer;
     border: white 4px solid;
+    border-radius: 5px;
     min-width: 20%;
     font-size: 25px;
 }
 
-#board td[answered="true"] {
+#board td.answered {
     background-color: grey;
+    cursor: default;
 }
 
 #question #info {
@@ -157,11 +159,11 @@ body{
     bottom: 0;
 }
 
-#buzzer #rank{
+#buzzer #name-display {
     float: left;
 }
 
-#buzzer #score{
+#buzzer #score-display {
     float: right;
     text-align: right;
 }
