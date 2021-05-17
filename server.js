@@ -1,21 +1,65 @@
 // Dependencies
-var express = require('express');
-var http = require('http');
-var path = require('path');
-var socketIO = require('socket.io');
-var app = express();
-var server = http.Server(app);
-var io = socketIO(server);
-var fs = require("fs");
+const express = require('express');
+const path = require('path');
+const app = express();
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
+const fs = require("fs");
+const bodyParser = require('body-parser')
+
 app.set('port', 5000);
-app.use('/static', express.static(__dirname + '/static'));// Routing
-app.get('/', function (request, response) {
-	response.sendFile(path.join(__dirname, 'game.html'));
+app.use('/static', express.static(__dirname + '/static')); // Routing
+app.use(bodyParser.urlencoded({ extended: true }));
+// app.use(bodyParser.json());
+
+
+console.log('init')
+
+app.get('/', function (req, res) {
+	res.sendFile(path.join(__dirname, 'static/html/index.html'));
 });
 
-// Starts the server.
-server.listen(5000, function () {
-	console.log('Starting server on port 5000: http://localhost:5000');
+app.get('/edit', (req, res) => {
+	if(!req.query.code){
+		res.redirect('/edit?code='+getBoardCode());
+		return;
+	}
+
+
+	res.sendFile(path.join(__dirname, 'static/html/board-editor.html'));
+})
+
+app.get('/board-set', (req, res) => {
+	let code = req.query.code;
+	console.log('load board', req.body, code)
+	// load saved board
+	let allBoards = JSON.parse(fs.readFileSync(`./board_data/boards.json`));
+	if(code in allBoards){ res.send(allBoards[code]) }
+	else res.send(makeRandomBoard())
+	//make random board
+});
+
+app.post('/save-board', bodyParser.json(), (req,res) => {
+	console.log('save', req.body);
+
+	fs.readFile('./board_data/boards.json', 'utf-8', (err, data) => {
+		console.log(data);
+		data = JSON.parse(data);
+		data[req.body.code] = req.body.board;
+		fs.writeFileSync('./board_data/boards.json', JSON.stringify(data), 'utf-8');
+	});
+});
+
+
+app.get('/host', (req, res) => {
+	fs.readFile('./board_data/boards.json', 'utf-8', (err, data) => {
+		data = JSON.parse(data)
+		if(data[req.query.code]){
+			// socket hander init
+		} else {
+			res.status(404).send('Board not found');
+		}
+	});
 });
 
 class Player {
@@ -24,6 +68,39 @@ class Player {
 		this.name = name;
 		this.score = 0;
 	}
+}
+
+function makeRandomBoard() {
+	console.log('make board')
+	const boardData = []; let catLabel, clues;
+	const requiredValues = [...Array(5)].map((_,i) => (i+1)*100);
+
+	while(boardData.length < 6) {
+		while(true){
+			catLabel = allCategories[Math.floor(allCategories.length * Math.random())];
+			clues = allQuestions[catLabel].filter(clue => clue.round == 'Jeopardy!');
+			let clueValues = clues.map(clue => clue.value);
+			if(requiredValues.every(value => clueValues.indexOf(value) >= 0)) break;
+		}
+
+		boardData.push({
+			label: catLabel,
+			clues: [...Array(5)].map((_,i) => {
+				while(true) {
+					let clue = clues[Math.floor(clues.length * Math.random())];
+					if(clue.value == (i+1)*100) return clue;
+				}
+			})
+		});
+	}
+	return boardData;
+}
+
+function getBoardCode () {
+	return 'xxxx'.replace(/[x]/g, function(c) {
+		var r = Math.random() * 16 | 0, v = (r & 0x3 | 0x8);
+		return v.toString(16);
+	});
 }
 
 function addRing(newRing) {
@@ -56,6 +133,9 @@ function sendScores() {
 function addHostListeners(){
 
 }
+
+const allQuestions = JSON.parse(fs.readFileSync('./categories2.json'));
+const allCategories = Object.keys(allQuestions);
 
 const sockets = new Map();
 const players = [];
@@ -133,8 +213,6 @@ io.on('connection', socket => {
 
 		hasReadied = true;
 
-
-
 		if(name != 'host'){
 			player = new Player(socket.id, name);
 			players.push(player);
@@ -178,4 +256,9 @@ io.on('connection', socket => {
 
 		io.sockets.emit('players', players, host != null);
 	});
+});
+
+// Starts the server.
+server.listen(5000, function () {
+	console.log('Starting server on port 5000: http://localhost:5000');
 });

@@ -13,7 +13,8 @@ body{
     height: 100%;
     display: none;
 }
-#login>div {
+
+body>div {
     position: absolute;
     top: 50%;
     left: 50%;

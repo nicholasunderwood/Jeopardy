@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+
+<head>
+	<title>Board Editor</title>
+	<link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/board-editor.css">
+</head>
+
+<body>
+
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<a class="navbar-brand" href="/static/html/index.html">Home</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+			aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+		</div>
+		<div class="form-inline my-2 my-lg-0">
+			<div id='board-code' class="navbar-brand">Code: <span id='code'></span></div>
+			<button class="btn btn-outline-success my-2 my-sm-0 px-5" id="save">Save</button>
+		</div>
+	</nav>
+
+	<main>
+		<form>
+			<table class="table table-striped">
+				<thead class="thead-light">
+					<tr>
+						<th></th>
+						<th><input type="text" class="form-control cat" tabindex="0"></th>
+						<th><input type="text" class="form-control cat"></th>
+						<th><input type="text" class="form-control cat"></th>
+						<th><input type="text" class="form-control cat"></th>
+						<th><input type="text" class="form-control cat"></th>
+						<th><input type="text" class="form-control cat"></th>
+					</tr>
+		
+				</thead>
+				<tbody>
+						<tr style="display: none;">
+							<td></td>
+							<td id='' scope='col'>
+								<div class="text">
+									<textarea class="form-control q" placeholder="Question" rows="4"></textarea>
+									<textarea class="form-control a" placeholder="Answer" rows="1"></textarea>
+								</div>
+								<div class="btns">
+									<button class="btn btn-outline-dark p-2"><img src="/static/icons/padlock-light.png"></button>
+									<button class="btn btn-outline-dark p-2"><img src="/static/icons/dice.png"></button>
+								</div>
+							</td>
+							<td id='template' scope='col'>
+								<textarea class="form-control q" placeholder="Question" rows="5"></textarea>
+								<textarea class="form-control a" placeholder="Answer" rows="2"></textarea>
+							</td>
+						</tr>
+
+				</tbody>
+			</table>
+		</form>
+	</main>
+
+	<div id='controls' class="border border-left-0">
+		<button class="btn btn-outline-dark p-2">
+			<img src="/static/icons/padlock-light.png">
+		</button>
+		<button class="btn btn-outline-dark p-2">
+			<img src="/static/icons/dice.png">
+		</button>
+	</div>
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+	<script src='/static/js/board-editor.js'></script>
+
+</body>
