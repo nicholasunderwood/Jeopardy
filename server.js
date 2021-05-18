@@ -5,7 +5,8 @@ const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const fs = require("fs");
-const bodyParser = require('body-parser')
+const bodyParser = require('body-parser');
+const uuid = require('uuid');
 
 app.set('port', 5000);
 app.use('/static', express.static(__dirname + '/static')); // Routing
@@ -21,10 +22,9 @@ app.get('/', function (req, res) {
 
 app.get('/edit', (req, res) => {
 	if(!req.query.code){
-		res.redirect('/edit?code='+getBoardCode());
+		res.redirect('/edit?code='+getCode(4));
 		return;
 	}
-
 
 	res.sendFile(path.join(__dirname, 'static/html/board-editor.html'));
 })
@@ -35,8 +35,8 @@ app.get('/board-set', (req, res) => {
 	// load saved board
 	let allBoards = JSON.parse(fs.readFileSync(`./board_data/boards.json`));
 	if(code in allBoards){ res.send(allBoards[code]) }
-	else res.send(makeRandomBoard())
 	//make random board
+	else res.send(makeRandomBoard())
 });
 
 app.post('/save-board', bodyParser.json(), (req,res) => {
@@ -52,14 +52,7 @@ app.post('/save-board', bodyParser.json(), (req,res) => {
 
 
 app.get('/host', (req, res) => {
-	fs.readFile('./board_data/boards.json', 'utf-8', (err, data) => {
-		data = JSON.parse(data)
-		if(data[req.query.code]){
-			// socket hander init
-		} else {
-			res.status(404).send('Board not found');
-		}
-	});
+	res.sendFile(path.join(__dirname, 'static/html/host.html'));
 });
 
 class Player {
@@ -96,10 +89,10 @@ function makeRandomBoard() {
 	return boardData;
 }
 
-function getBoardCode () {
-	return 'xxxx'.replace(/[x]/g, function(c) {
-		var r = Math.random() * 16 | 0, v = (r & 0x3 | 0x8);
-		return v.toString(16);
+function getCode (length) {
+	return 'x'.repeat(length).replace(/[x]/g, function(c) {
+		var r = (Math.random() * 26 | 0) + 10
+		return r.toString(36).toUpperCase();
 	});
 }
 
@@ -137,6 +130,7 @@ function addHostListeners(){
 const allQuestions = JSON.parse(fs.readFileSync('./categories2.json'));
 const allCategories = Object.keys(allQuestions);
 
+const games = new Map();
 const sockets = new Map();
 const players = [];
 const catagories = [];
@@ -147,16 +141,32 @@ var question = null;
 var currentPlayer = null;
 var hasStarted = false;
 
-fs.readFile("questions.json", 'utf8', (err, data) => {
-	if (err) throw err;
-	board = JSON.parse(data)
-	for(key in board){
-		catagories.push(key);
-	}
+// Add the WebSocket handlers
+io.of('/host').on('connection', function(socket) {
+	var gameCode = getCode(6);
+	console.log('new host: ' + gameCode)
+	socket.join(gameCode)
+	var board = null;
+	socket.emit('connected', gameCode);
+	
+	socket.on('board-code', code => {
+		let boards = JSON.parse(fs.readFileSync('./board_data/boards.json', 'utf-8'));
+		console.log(code)
+		board = boards[code];
+		let labels = board.map(cat => cat.label);
+		console.log('labels: ' + labels);
+		socket.emit('labels', labels);
+
+
+	});
+
+	socket.on('start', () => {
+		console.log('start')
+	});
 });
 
-// Add the WebSocket handlers
-io.on('connection', socket => {
+io.on('', socket => {
+	console.log('connection')
 	var isHost = false;
 	var hasReadied = false;
 	var player = null;

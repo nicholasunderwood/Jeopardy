@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+
+<head>
+	<title>Jeopardy</title>
+	<link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/host.css">
+</head>
+
+<body>
+
+	<nav class="navbar navbar-expand-lg navbar-light bg-light">
+		<a class="navbar-brand" href="/static/html/index.html">Home</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+			aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+		</div>
+		<div class="form-inline my-2 my-lg-0">
+			<div id='board-code' class="navbar-brand">Join Code: <span id='code'></span></div>
+		</div>
+	</nav>
+
+	<main class="border rounded">
+		<h2>Welcome to Jeopardy</h2>
+		<div id='info'>
+			<div id='players' class="p-3 my-4">
+				<h3>Players</h3>
+				<ul class="list-group">
+					<li class="list-group-item">NoMoreNickels</li>
+					<li class="list-group-item">Stannage</li>
+					<li class="list-group-item">EggSauce</li>
+					<li class="list-group-item">bludotexe</li>
+					<li class="list-group-item">LeftHand</li>
+				</ul>
+				  
+			</div>
+			<div id='cats' class="p-3 my-4">
+				<h3>Categories</h3>
+				<ul id='cat-list' class="list-group">
+
+				</ul>
+			</div>
+		</div>
+		<div id='controls'>
+			<button id='start' class="btn btn-success form-control">Start</button>
+		</div>
+	</main>
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src='/static/js/host.js'></script>
+
+</body>

@@ -3,7 +3,7 @@
 
 <head>
 	<title>Jeopardy</title>
-	<link rel="stylesheet" type="text/css" href="./static/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
 	<link rel="stylesheet" type="text/css" href="/static/css/index.css">
 </head>
 
@@ -13,7 +13,7 @@
 
 		<div id='options'>
 			<div class="option">
-				<form action='/host' method="GET">
+				<form action='/join' method="GET">
 					<h3>Join a Game</h3>
 					<label for='key'>Join Code</label>
 					<input class="form-control my-1" id='game-key'>
@@ -22,10 +22,13 @@
 				</form>
 			</div>
 			<div class="option">
+			<form action='/host' method="GET">
 				<h3>Host a Game</h3>
 				<label for='key'>Board Code</label>
-				<input class="form-control my-1" id='board-key'>
+				<input class="form-control my-1" id='board-key' name='board'>
 				<button class="btn btn-secondary form-control my-1">Go</button>
+			</form>
+
 			</div>
 			<div class="option">
 				<form action="/edit" method="GET">
