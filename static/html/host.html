@@ -21,30 +21,71 @@
 		</div>
 	</nav>
 
-	<main class="border rounded">
-		<h2>Welcome to Jeopardy</h2>
-		<div id='info'>
-			<div id='players' class="p-3 my-4">
-				<h3>Players</h3>
-				<ul class="list-group">
-					<li class="list-group-item">NoMoreNickels</li>
-					<li class="list-group-item">Stannage</li>
-					<li class="list-group-item">EggSauce</li>
-					<li class="list-group-item">bludotexe</li>
-					<li class="list-group-item">LeftHand</li>
-				</ul>
-				  
-			</div>
-			<div id='cats' class="p-3 my-4">
-				<h3>Categories</h3>
-				<ul id='cat-list' class="list-group">
+	<div id='rankings' style="display: none;">
+		<ul class="list-group list-group-horizontal">
+		</ul>
+	</div>
 
-				</ul>
+	<main class="border rounded">
+		<screen id='lobby'>
+			<h2>Welcome to Jeopardy</h2>
+			<div id='info'>
+				<div id='players' class="p-3 my-4">
+					<h4>Players</h4>
+					<ul id='player-list' class="list-group">
+						<li class="list-group-item">NoMoreNickels</li>
+						<li class="list-group-item">Stannage</li>
+						<li class="list-group-item">EggSauce</li>
+						<li class="list-group-item">bludotexe</li>
+						<li class="list-group-item">LeftHand</li>
+					</ul>
+					  
+				</div>
+				<div id='cats' class="p-3 my-4">
+					<h4>Categories</h4>
+					<ul id='cat-list' class="list-group">
+	
+					</ul>
+				</div>
 			</div>
-		</div>
-		<div id='controls'>
-			<button id='start' class="btn btn-success form-control">Start</button>
-		</div>
+			<div id='controls'>
+				<button id='start' class="btn btn-success form-control">Start</button>
+			</div>
+			
+			
+		</screen>
+		
+		<screen id='board'>
+			<body>
+				<div id='board'>
+					<div>
+						<table class="table">
+							<thead></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</body>
+		</screen>
+
+		<screen id='question'>
+			<div id='q'>
+				<span id='visable'></span>
+				<span id='hidden'></span>
+			</div>
+			<div id='a'>
+				<span></span>
+			</div>
+			<div id='btns'>
+				<div class="form-group row">
+					<div class="col"><input type="button" id='correct' class="form-control btn btn-outline-dark validation" value="Correct" disabled></div>
+					<div class="col"><input type="button" id='incorrect' class="form-control btn btn-dark validation" value="Incorrect" disabled></div>
+				</div>
+				<div class="form-group row">
+					<div class="col"><input type="button" id='back' value="Return to board" disabled></div>
+				</div>
+			</div>
+		</screen>
 	</main>
 	
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>

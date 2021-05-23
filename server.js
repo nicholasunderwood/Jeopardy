@@ -151,17 +151,19 @@ io.of('/host').on('connection', function(socket) {
 	
 	socket.on('board-code', code => {
 		let boards = JSON.parse(fs.readFileSync('./board_data/boards.json', 'utf-8'));
-		console.log(code)
+		// console.log(code)
 		board = boards[code];
 		let labels = board.map(cat => cat.label);
-		console.log('labels: ' + labels);
+		// console.log('labels: ' + labels);
 		socket.emit('labels', labels);
-
-
+		socket.emit('start')
 	});
 
 	socket.on('start', () => {
-		console.log('start')
+		console.log('start');
+		io.in(gameCode).emit('start');
+		io.emit('start');
+		socket.emit('start')
 	});
 });
 

@@ -19,6 +19,6 @@ main #info{
 }
 
 
-main>#info>div{
+main #info>div{
     flex: 0 0 45%;
 }

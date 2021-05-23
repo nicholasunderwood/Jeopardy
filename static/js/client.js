@@ -2,7 +2,6 @@ const socket = io();
 var name = '';
 var isHost = false;
 var currentScores = null;
-var currentQuestion = null;
 
 // localstorage.setItem('uUID', Math.random().toString(24) + new Date());
 // socket.emit('userLogin', localstorage.getItem('uUID'));
@@ -14,13 +13,14 @@ function show(id){
 }
 
 function startGame(categories) {
+    
     console.log('start game')
     socket.off('start')
     socket.off('players')
 
-    socket.on('question', showQuestion);
     socket.on('board', showBoard);
     socket.on('scores', loadRankings);
+
 
     $('#rankings').show();
     loadBoard(categories);
@@ -28,40 +28,93 @@ function startGame(categories) {
     showBoard(board);
 }
 
-function loadRankings(scores){
-    let list = $('#rankings ul').empty();
-    let add = $('<input type="button" value="+" class="money-control add btn btn-success">');
-    let sub = $('<input type="button" value="-" class="money-control add btn btn-danger">');
+function loadQuestion() {
 
-    scores.forEach(player => {
-        list.append(
-            $(`<li class="list-group-item" player=${player.id}></li>`)
+    function setValidation(isDisabled){
+        $('.validation').each( (_, el) => $(el).prop('disabled', isDisabled));
+    }
+
+    function showQuestion(question){
+    
+        setValidation(true)
+    
+        $('#correct').click(() => {
+            socket.emit('correct');
+            showAnswer(question.answer);
+            setValidation(true);
+        });
+        
+        $('#back').val('Show Answer').unbind().click(() => showAnswer(question.answer));
+        
+        let words = question.question.split('');
+        let interval = setInterval(() => {
+            $('#q').append(words.shift());
+            if(words.length == 0) clearInterval(interval);
+        }, 60)
+    
+        show('question');
+    }
+
+    function showAnswer(answer) {
+        console.log('show answer', answer)
+        $('#a').text(answer);
+        setValidation(true)
+        $('#back').val('Back to Board').unbind().click(() => socket.emit('back') );
+    }
+
+    $('#incorrect').click(() => {
+        socket.emit('incorrect');
+        setValidation(true);
+    });
+
+    socket.on('buzz', name => {
+        alert(name + " has buzzed in");
+        setValidation(false);
+    });
+
+    socket.on('question', showQuestion)
+}
+
+function loadRankings(){
+    var currentScores = [];
+
+    function updateRankings(scores){
+        if(currentScores.length == scores.length){
+            updateValues(scores)
+        } else {
+            updateNames(scores)
+        }
+        currentScores = scores
+    }
+
+    function updateValues(scores) {
+        $('#rankings li div h5').each((i,el) => {
+            let player = scores[Math.floor(i/2)];
+            if(i % 2 == 0){
+                $(`#rankings li:nth-child(${Math.floor(i/2)+1})`).attr('player', player.id);
+                $(el).text(player.name);
+            } else {
+                $(el).text((player.score < 0 ? '-$' : '$') + Math.abs(player.score));
+            }
+        })
+    }
+
+    function updateNames(scores){
+        let list = $('#rankings ul').empty();
+        let add = $('<input type="button" value="+" class="money-control add btn btn-success">');
+        let sub = $('<input type="button" value="-" class="money-control add btn btn-danger">');
+    
+        scores.forEach(player => {
+            list.append($(`<li class="list-group-item" player=${player.id}></li>`)
                 .append(add.clone().click(e => changeScore(e, 100)))
                 .append(`<div><h5>${player.name}</h5><h5>$${player.score}</h5><div>`)
                 .append(sub.clone().click(e => changeScore(e, -100)))
-        )
-    });
+            )
+        });
+    }
 
     socket.removeListener('scores', loadRankings);
     socket.on('scores', updateRankings);
-    currentScores = scores
-}
-
-function updateRankings(scores) {
-    if(scores.length != currentScores.length){
-        loadRankings(scores)
-        return;
-    }
-
-    $('#rankings li div h5').each((i,el) => {
-        let player = scores[Math.floor(i/2)];
-        if(i % 2 == 0){
-            $(`#rankings li:nth-child(${Math.floor(i/2)+1})`).attr('player', player.id);
-            $(el).text(player.name);
-        } else {
-            $(el).text((player.score < 0 ? '-$' : '$') + Math.abs(player.score));
-        }
-    })
 }
 
 function loadBoard(categories) {
@@ -96,60 +149,6 @@ function showBoard() {
 
 function changeScore(event, delta) {
     socket.emit('score change', $($(event.target).parent()).attr('player'), delta);
-}
-
-function setValidation(isDisabled){
-    $('.validation').each( (_, el) => $(el).prop('disabled', isDisabled));
-}
-
-function loadQuestion() {
-
-    $('#incorrect').click(() => {
-        socket.emit('incorrect');
-        setValidation(true);
-    });
-
-    socket.on('buzz', name => {
-        alert(name + " has buzzed in");
-        setValidation(false);
-    });
-}
-
-function showQuestion(question){
-    currentQuestion = question
-
-    setValidation(true)
-
-    $('#correct').click(() => {
-        socket.emit('correct');
-        showAnswer(question.answer);
-        setValidation(true);
-    });
-    
-    $('#back').unbind().click(() => {
-        showAnswer(question.answer);
-    }).val('Show Answer');
-    
-    
-    // $('#q').text(question.question);
-    let words = question.question.split('');
-    let span = $('#q');
-    let interval = setInterval(() => {
-        span.text(span.text() + words.shift());
-        if(words.length == 0){
-            clearInterval(interval);
-        }
-    }, 60)
-
-    show('question');
-}
-
-function showAnswer(answer) {
-    console.log('show answer', answer)
-    $('#a').text(answer);
-    $('.validation').each((_,el) => $(el).prop('disabled', true));
-    $('#back').val('Back to Board');
-    $('#back').unbind().click(() => socket.emit('back') );
 }
 
 function loadBuzzer(name) {
